@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="nEpZvX2uJGjGyZymOuitA6">
+<head data-page-node-id="nm7TAFZIcGlYPDhTHiVUQo">
+<meta charset="UTF-8" data-page-node-id="kqtSJHuFSBLv8EfxwoI2Xz">
+<meta name="viewport" content="width=device-width,initial-scale=1" data-page-node-id="TufwcE20E5y4GZD6VN0a8k">
+<title>TIDEWORKS · 内部系统</title>
+<style>
+:root{
+  --bg:#0a101c; --panel:#111a2b; --panel2:#18243a; --panel3:#1f2d47;
+  --line:#243350; --line2:#33456b;
+  --ink:#c9d6e8; --muted:#7186a8; --dim:#4d5f7f;
+  --cyan:#22d3ee; --amber:#f5a524; --red:#ef4444; --green:#34d399;
+  --mono:ui-monospace,"SFMono-Regular","Consolas","Courier New","Microsoft YaHei",monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:14px;line-height:1.7;
+  overflow:hidden;letter-spacing:.01em;
+}
+::selection{background:var(--cyan);color:#04121c}
+
+/* 全局氛围层 */
+.fx{position:fixed;inset:0;pointer-events:none;z-index:900}
+.scan{background:repeating-linear-gradient(to bottom,transparent 0 2px,rgba(0,0,0,.16) 2px 4px);opacity:.5}
+.vig{background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.6) 100%)}
+body.corrupt .fx.corruptfx{opacity:1}
+.fx.corruptfx{opacity:0;transition:opacity 2s;background:radial-gradient(ellipse at center,transparent 30%,rgba(239,68,68,.14) 100%)}
+
+/* ============ 启动序列 ============ */
+#boot{position:fixed;inset:0;background:#04080f;z-index:1000;padding:34px 28px;overflow-y:auto}
+#boot .l{font-size:13px;color:#5eead4;white-space:pre-wrap;line-height:1.85;text-shadow:0 0 8px rgba(34,211,238,.28)}
+#boot .ok{color:var(--green)}
+#boot .warn{color:var(--amber)}
+#boot .err{color:var(--red)}
+#boot .hint{margin-top:22px;color:var(--dim);font-size:12px;animation:blink 1.1s steps(1) infinite}
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+#boot.done{display:none}
+
+/* ============ 登录 ============ */
+#login{position:fixed;inset:0;display:none;place-items:center;background:var(--bg);z-index:500;padding:20px}
+#login.on{display:grid}
+.loginbox{width:100%;max-width:420px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:34px 32px;box-shadow:0 24px 70px rgba(0,0,0,.6)}
+.brand{text-align:center;margin-bottom:26px}
+.brand .lg{font-size:26px;font-weight:700;letter-spacing:.28em;color:var(--ink)}
+.brand .lg b{color:var(--cyan)}
+.brand .slogan{font-size:11px;color:var(--dim);letter-spacing:.2em;margin-top:6px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:11px;color:var(--muted);letter-spacing:.12em;margin-bottom:6px}
+.field input{
+  width:100%;background:#0c1524;border:1px solid var(--line);color:var(--ink);
+  font-family:var(--mono);font-size:14px;padding:10px 12px;border-radius:4px;outline:none;transition:.18s;
+}
+.field input:focus{border-color:var(--cyan);box-shadow:0 0 0 2px rgba(34,211,238,.14)}
+.field .tip{font-size:10.5px;color:var(--dim);margin-top:5px}
+.btn{
+  width:100%;background:var(--cyan);color:#04121c;border:none;padding:11px;
+  font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.14em;border-radius:4px;cursor:pointer;transition:.18s;
+}
+.btn:hover{background:#67e8f9}
+.btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line);font-weight:400}
+.btn.ghost:hover{border-color:var(--line2);color:var(--ink);background:var(--panel2)}
+.err-msg{color:var(--red);font-size:12px;margin-top:12px;min-height:18px;text-align:center}
+.forgot{text-align:center;margin-top:14px;font-size:11.5px;color:var(--dim)}
+.forgot a{color:var(--muted);text-decoration:none;border-bottom:1px dashed var(--line2);cursor:pointer}
+.forgot a:hover{color:var(--cyan)}
+.plate{
+  margin-top:22px;padding-top:16px;border-top:1px dashed var(--line);
+  font-size:11px;color:var(--dim);line-height:1.9;
+}
+.plate b{color:var(--muted);font-weight:600}
+
+/* ============ 桌面 ============ */
+#desk{position:fixed;inset:0;display:none;flex-direction:column;z-index:400}
+#desk.on{display:flex}
+.topbar{
+  height:38px;flex:none;display:flex;align-items:center;gap:14px;padding:0 16px;
+  background:var(--panel);border-bottom:1px solid var(--line);font-size:11.5px;color:var(--muted);
+}
+.topbar .b{color:var(--ink);font-weight:700;letter-spacing:.16em}
+.topbar .sp{margin-left:auto}
+.badge{background:var(--panel2);border:1px solid var(--line);padding:2px 8px;border-radius:3px;color:var(--cyan);font-size:10.5px}
+.badge.amber{color:var(--amber)}
+.badge.red{color:var(--red);border-color:#5c2222}
+.badge.green{color:var(--green)}
+
+.deskbody{flex:1;display:flex;min-height:0}
+.rail{
+  width:92px;flex:none;background:var(--panel);border-right:1px solid var(--line);
+  padding:14px 8px;display:flex;flex-direction:column;gap:6px;overflow-y:auto;
+}
+.app{
+  background:transparent;border:1px solid transparent;border-radius:5px;padding:11px 4px;
+  text-align:center;cursor:pointer;transition:.16s;color:var(--muted);
+}
+.app:hover{background:var(--panel2);color:var(--ink)}
+.app.on{background:var(--panel3);border-color:var(--line2);color:var(--cyan)}
+.app.locked{opacity:.34;cursor:not-allowed}
+.app.locked:hover{background:transparent;color:var(--muted)}
+.app .ic{font-size:19px;line-height:1.4}
+.app .nm{font-size:10px;margin-top:3px;letter-spacing:.03em}
+.app .lk{font-size:9px;color:var(--dim)}
+
+.work{flex:1;min-width:0;padding:16px;overflow:hidden;display:flex}
+.win{
+  flex:1;background:var(--panel);border:1px solid var(--line);border-radius:6px;
+  display:flex;flex-direction:column;min-height:0;box-shadow:0 12px 40px rgba(0,0,0,.35);
+}
+.winbar{
+  height:34px;flex:none;display:flex;align-items:center;gap:10px;padding:0 14px;
+  background:var(--panel2);border-bottom:1px solid var(--line);border-radius:6px 6px 0 0;
+}
+.winbar .t{font-size:12px;font-weight:600;color:var(--ink)}
+.winbar .sub{font-size:10.5px;color:var(--dim)}
+.winbar .sp{margin-left:auto}
+.dotb{width:9px;height:9px;border-radius:50%;background:var(--line2)}
+.winbody{flex:1;overflow-y:auto;padding:18px 20px;font-size:13px;line-height:1.95}
+.winbody::-webkit-scrollbar{width:9px}
+.winbody::-webkit-scrollbar-thumb{background:var(--line);border-radius:5px}
+
+/* 内容通用 */
+h4{font-size:14px;color:var(--ink);margin-bottom:10px;letter-spacing:.04em}
+.muted{color:var(--muted)}
+.dim{color:var(--dim)}
+.cy{color:var(--cyan)}
+.am{color:var(--amber)}
+.rd{color:var(--red)}
+.gr{color:var(--green)}
+hr.s{border:none;border-top:1px solid var(--line);margin:16px 0}
+.mono-box{background:#0c1524;border:1px solid var(--line);border-radius:4px;padding:12px 14px;font-size:12.5px;white-space:pre-wrap;line-height:1.85}
+.kbd{background:var(--panel3);border:1px solid var(--line2);border-radius:3px;padding:1px 6px;font-size:11.5px;color:var(--ink)}
+
+/* 邮件 */
+.mail{border:1px solid var(--line);border-radius:4px;margin-bottom:9px;overflow:hidden}
+.mail .hd{padding:10px 13px;background:var(--panel2);cursor:pointer;display:flex;gap:10px;align-items:center}
+.mail .hd:hover{background:var(--panel3)}
+.mail .hd .from{font-size:12.5px;color:var(--ink);font-weight:600;min-width:78px}
+.mail .hd .sbj{flex:1;font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mail .hd .dt{font-size:10.5px;color:var(--dim)}
+.mail .bd{display:none;padding:14px;border-top:1px solid var(--line);background:#0e1727;font-size:12.5px;line-height:1.95;white-space:pre-wrap}
+.mail.open .bd{display:block}
+.mail.unread .hd .from::before{content:"● ";color:var(--cyan)}
+
+/* 终端 */
+#termOut{white-space:pre-wrap;font-size:12.5px;line-height:1.8;color:var(--ink)}
+#termOut .cmd{color:var(--cyan)}
+#termOut .out{color:var(--muted)}
+#termOut .err{color:var(--red)}
+#termOut .ok{color:var(--green)}
+.termline{display:flex;align-items:center;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.termline input{
+  flex:1;background:transparent;border:none;color:var(--ink);font-family:var(--mono);font-size:13px;outline:none;
+}
+.ps1{color:var(--green);font-size:12.5px;white-space:nowrap}
+
+/* 档案 */
+.searchrow{display:flex;gap:8px;margin-bottom:16px}
+.searchrow input{
+  flex:1;background:#0c1524;border:1px solid var(--line);color:var(--ink);font-family:var(--mono);
+  font-size:13px;padding:9px 12px;border-radius:4px;outline:none;
+}
+.searchrow input:focus{border-color:var(--cyan)}
+.searchrow button{
+  background:var(--panel3);border:1px solid var(--line2);color:var(--ink);font-family:var(--mono);
+  font-size:12px;padding:9px 18px;border-radius:4px;cursor:pointer;
+}
+.searchrow button:hover{background:var(--cyan);color:#04121c;border-color:var(--cyan)}
+.staffcard{border:1px solid var(--line);border-radius:5px;padding:16px 18px;background:var(--panel2);position:relative}
+.staffcard.archived{border-color:#5c2222;background:#1a1119}
+.staffcard dl{display:grid;grid-template-columns:78px 1fr;gap:7px 14px;font-size:12.5px}
+.staffcard dt{color:var(--muted)}
+.staffcard dd{color:var(--ink)}
+.hidden-text{
+  color:var(--muted);user-select:text;cursor:text;
+  background:#0c1524;border-left:2px solid var(--cyan);padding:7px 11px;border-radius:0 3px 3px 0;
+}
+.staffcard.archived .hidden-text{color:#d8a0a0;background:#140c0e;border-left-color:var(--red)}
+.hidden-text::selection{background:var(--cyan);color:#04121c}
+
+/* 摩斯 */
+.morsebox{background:#0c1524;border:1px solid var(--line);border-radius:4px;padding:16px;text-align:center}
+.playbtn{
+  background:var(--panel3);border:1px solid var(--line2);color:var(--cyan);font-family:var(--mono);
+  font-size:12.5px;padding:10px 22px;border-radius:4px;cursor:pointer;margin-bottom:12px;
+}
+.playbtn:hover{background:var(--cyan);color:#04121c}
+.playbtn.playing{background:var(--amber);color:#1a1000;border-color:var(--amber)}
+.morsevis{font-size:20px;letter-spacing:.28em;color:var(--amber);min-height:30px;font-weight:700}
+.mtable{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:4px;margin-top:12px;font-size:11.5px}
+.mtable span{background:var(--panel2);padding:3px 7px;border-radius:3px;color:var(--muted)}
+.mtable span b{color:var(--cyan);margin-right:5px}
+
+/* ============ 极限模式 ============ */
+.ext-entry{
+  position:fixed;top:13px;right:16px;z-index:1200;cursor:pointer;user-select:none;
+  font-size:10.5px;letter-spacing:.16em;color:#4a5d80;border:1px solid #1e2b42;
+  background:rgba(10,16,28,.75);border-radius:3px;padding:5px 10px;transition:all .2s;
+}
+.ext-entry:hover{color:var(--red);border-color:#5c2222;text-shadow:0 0 8px rgba(239,68,68,.45)}
+.ext-entry.on{color:var(--red);border-color:#5c2222;background:rgba(44,10,14,.72)}
+.deep-progress{display:flex;gap:5px;margin:10px 0 16px}
+.deep-progress i{flex:1;height:4px;background:var(--panel3);border-radius:2px;transition:.3s}
+.deep-progress i.done{background:var(--red);box-shadow:0 0 8px rgba(239,68,68,.5)}
+.deep-progress i.cur{background:var(--amber)}
+.layer{border:1px solid var(--line);border-left:2px solid var(--red);border-radius:0 4px 4px 0;padding:13px 15px;margin-bottom:11px;background:#0f1522}
+.layer h5{font-size:12px;color:var(--amber);margin-bottom:9px;letter-spacing:.1em;font-weight:600}
+.layer .ci{font-size:15px;letter-spacing:.22em;color:var(--red);word-break:break-all;font-weight:600}
+.layer.done{border-left-color:var(--green)}
+.layer.done h5{color:var(--green)}
+.layer.done .ci{color:var(--muted);letter-spacing:.14em;font-weight:400}
+.warn-box{border:1px dashed #5c2222;background:rgba(239,68,68,.06);color:#e8a2a2;padding:9px 12px;border-radius:3px;font-size:11.5px;margin-top:11px;line-height:1.7}
+
+/* 密码门 */
+.gate{text-align:center;padding:26px 20px}
+.gate .gi{font-size:34px;margin-bottom:14px;opacity:.85}
+.gate h4{margin-bottom:8px}
+.gate p{font-size:12.5px;color:var(--muted);margin-bottom:18px;max-width:400px;margin-left:auto;margin-right:auto}
+.gate input{
+  background:#0c1524;border:1px solid var(--line);color:var(--ink);font-family:var(--mono);font-size:15px;
+  padding:11px 14px;border-radius:4px;outline:none;text-align:center;letter-spacing:.16em;width:230px;
+}
+.gate input:focus{border-color:var(--cyan)}
+.gate .btn{width:230px;margin:12px auto 0;display:block}
+.gate .emsg{color:var(--red);font-size:12px;margin-top:12px;min-height:18px}
+
+/* 提示系统 */
+.hints{margin-top:18px;border-top:1px dashed var(--line);padding-top:14px}
+.hints .hh{font-size:11px;color:var(--dim);letter-spacing:.1em;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.hbtn{
+  background:var(--panel2);border:1px solid var(--line);color:var(--muted);font-family:var(--mono);
+  font-size:11.5px;padding:6px 13px;border-radius:4px;cursor:pointer;margin-right:6px;margin-bottom:6px;transition:.16s;
+}
+.hbtn:hover{border-color:var(--amber);color:var(--amber)}
+.hbtn.used{background:#1a1408;border-color:#4a3a12;color:var(--amber);cursor:default}
+.htext{
+  background:#161306;border-left:2px solid var(--amber);padding:10px 14px;margin-top:8px;
+  font-size:12.5px;color:#e8d9b0;border-radius:0 4px 4px 0;line-height:1.85;
+}
+
+/* 名单 */
+table.nm{width:100%;border-collapse:collapse;font-size:12.5px}
+table.nm th,table.nm td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line)}
+table.nm th{background:var(--panel2);color:var(--muted);font-size:11px;font-weight:600;letter-spacing:.06em}
+table.nm tr:hover td{background:var(--panel2)}
+table.nm tr.hi td{background:#1a1119;color:var(--red)}
+table.nm tr.new td{background:#0d1f18;color:var(--green)}
+
+/* 结局 */
+#ending{position:fixed;inset:0;z-index:600;display:none;place-items:center;background:#04070d;padding:24px;overflow-y:auto}
+#ending.on{display:grid}
+.endbox{max-width:600px;text-align:center}
+.endbox .big{font-size:clamp(24px,5vw,40px);font-weight:700;letter-spacing:.1em;color:var(--red);margin-bottom:20px;text-shadow:0 0 30px rgba(239,68,68,.45)}
+.endbox p{font-size:13.5px;color:var(--muted);line-height:2.1;margin-bottom:14px}
+.endbox .seat{
+  display:inline-block;margin:22px 0;border:1px solid #5c2222;background:#160d0d;
+  padding:16px 30px;border-radius:5px;color:var(--red);font-size:17px;letter-spacing:.2em;font-weight:700;
+}
+.endbox .btn{width:auto;padding:11px 30px;display:inline-block;margin-top:8px}
+.glitch{animation:gl .28s steps(2) infinite}
+@keyframes gl{0%{transform:translate(0)}25%{transform:translate(-2px,1px)}50%{transform:translate(2px,-1px)}75%{transform:translate(-1px,-1px)}100%{transform:translate(0)}}
+
+/* 弹窗 */
+#modal{position:fixed;inset:0;z-index:800;display:none;place-items:center;background:rgba(4,7,13,.82);padding:20px}
+#modal.on{display:grid}
+.mbox{background:var(--panel);border:1px solid var(--line2);border-radius:6px;padding:24px 26px;max-width:440px;width:100%}
+.mbox h4{margin-bottom:12px}
+.mbox p{font-size:12.5px;color:var(--muted);line-height:1.9;margin-bottom:8px}
+.mbox .btn{margin-top:16px}
+
+/* 吐司 */
+#toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);
+  background:var(--panel3);border:1px solid var(--line2);color:var(--ink);
+  padding:10px 20px;border-radius:4px;font-size:12.5px;z-index:950;opacity:0;transition:.28s;pointer-events:none;
+}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* 响应式 */
+@media(max-width:720px){
+  .rail{width:66px;padding:10px 5px}
+  .app .nm{font-size:9px}
+  .work{padding:8px}
+  .winbody{padding:14px}
+  .staffcard dl{grid-template-columns:66px 1fr}
+}
+</style>
+</head>
+<body data-page-node-id="D50Edffwz2FvHvlgX5BL6e">
+
+<div class="fx scan" data-page-node-id="PwnsDuDAvWHkjTUkWDmpim"></div>
+<div class="fx vig" data-page-node-id="Zg2WE9c0vJBDxUYtb2mZfl"></div>
+<div class="fx corruptfx" data-page-node-id="GjSKUZv4Dr1JuqteZDLyAK"></div>
+
+<!-- ========== 启动序列 ========== -->
+<div id="boot" data-page-node-id="wh6BfSRuEx2yOQLGcLbHoY"><div class="l" id="bootLog" data-page-node-id="Du4KCy7khjZ2d4gXwEwy7K"></div></div>
+
+<!-- ========== 登录 ========== -->
+<div id="login" data-page-node-id="C92RgLkyiYv1YCLOIWMyOY">
+  <div class="loginbox" data-page-node-id="2SZvv8PIEN71xiR1rLLk6X">
+    <div class="brand" data-page-node-id="swTl4aBOOC0XGqhTZLAYCt">
+      <div class="lg" data-page-node-id="GEqUjnCNsUKnfEHpgpYK8x">T<b data-page-node-id="lq2sorZDSLJRbeVd3oaSiy">I</b>DEWORKS</div>
+      <div class="slogan" data-page-node-id="sBWD5PQjvBkjRqjdwgcgNn">潮 汐 科 技 · 内 部 系 统 v4.2.1</div>
+    </div>
+    <div class="field" data-page-node-id="qEP77TeGfxDpsRl5wPmbEo">
+      <label data-page-node-id="OyZ8jPn9qib77XvMHmVn6I">员工工号</label>
+      <input id="inUser" type="text" placeholder="M-XXXX" autocomplete="off" spellcheck="false" data-page-node-id="vZVLNCfYUKBDBfpNSaHO1B">
+      <div class="tip" data-page-node-id="j04vfDCBMzXCGvOWUjeqGu">格式：M- 加四位数字</div>
+    </div>
+    <div class="field" data-page-node-id="08cHXoqBpBI895xELG7iBW">
+      <label data-page-node-id="kVJmZ4yKE3LtWgnxcSjVUN">访问口令</label>
+      <input id="inPass" type="password" placeholder="••••••••" autocomplete="off" spellcheck="false" data-page-node-id="JyjGmTHyyR2RYcglSkgSb2">
+    </div>
+    <button class="btn" id="btnLogin" data-page-node-id="F0Sr2Kot5prz8eKCUMB7nw">登 录</button>
+    <div class="err-msg" id="loginErr" data-page-node-id="t5BqmyTnuturDGI7JCylcG"></div>
+    <div class="forgot" data-page-node-id="QMHekVlGOW3IY0wSVjgE3x"><a id="forgot" data-page-node-id="QEC6yivaHNH4aCtszpU2QF">忘记口令？</a></div>
+    <div class="plate" data-page-node-id="tL0uz48DRpaaf2ykXEsE9z">
+      上次登录：<b data-page-node-id="4lsWBVaEiecCAB7GsTrhpB">陈默（M-0417）</b><br data-page-node-id="ry1qm4H1ApOFUKMm6J3S54">
+      位置：研发 B 区 · 工位 3F-17　|　<b data-page-node-id="hFjkFkttSWDbCCBORPPCAF">状态：离线</b><br data-page-node-id="hDnSu2lHE60kUV9k9BDiCw">
+      <span id="plateRule" style="color:var(--dim)" data-page-node-id="qAxHHyNF9ujH2EBGvM8Zt7">系统公告：新员工初始口令 = 姓氏全拼 + 工号后四位（例：张三 / M-0312 → zhang0312）</span><br data-page-node-id="l0QFUCWGn2u8ynAj2zqc2L">
+      <span class="dim" data-page-node-id="dv4S07btLajOPGX0BlQnHS">本系统仅供内部授权人员使用，所有操作将被记录。</span>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 极限难度入口（开始页面右上角） ========== -->
+<a id="extEntry" class="ext-entry" title="极限难度">◈ 极限</a>
+
+<!-- ========== 桌面 ========== -->
+<div id="desk" data-page-node-id="DvtJs9uKycaju0MRHqjL4X">
+  <div class="topbar" data-page-node-id="pKoFHXBsfhdk2YEEXjMLqu">
+    <span class="b" data-page-node-id="H1pTQ3ISBr4L9fFzLsH8lX">TIDEWORKS</span>
+    <span class="dim" data-page-node-id="EmeezU8tJhybLCWxIpv9GM">内部系统</span>
+    <span class="badge" id="badgePerm" data-page-node-id="ose7lrT13MJdhq3BKPxvZP">权限 L1</span>
+    <span class="badge green" id="badgeProg" data-page-node-id="JKUpK54Ar1q1RJNKBS29iW">进度 0 / 5</span>
+    <span class="sp" data-page-node-id="vIMw4FHVaakE6Ui7CrRqlZ"></span>
+    <span id="clock" class="dim" data-page-node-id="6vO010D2ApX1IGV7PjHnbp"></span>
+    <span class="badge red" id="btnExt" style="cursor:pointer;display:none" data-page-node-id="extBadgeTop">极限</span>
+    <span class="badge amber" id="btnHintAll" style="cursor:pointer" data-page-node-id="vsXDADkb0JYg7PHozFQwZb">提示</span>
+    <span class="badge" id="btnReset" style="cursor:pointer" data-page-node-id="wmtTYs103ujVyfP5AMWHqf">重置进度</span>
+  </div>
+  <div class="deskbody" data-page-node-id="0j0wFtwsBlBbFG1xH7LhBB">
+    <div class="rail" id="rail" data-page-node-id="RCr8TDuXo7NlUsLRZb7HN8"></div>
+    <div class="work" data-page-node-id="9CpuXu5Rv5C3FIKGalbnbG"><div class="win" data-page-node-id="qcaRMFBVPAibg61XjKeTmB">
+      <div class="winbar" data-page-node-id="SdkT6VrUqqJWlpMXdHJ7ql">
+        <span class="dotb" data-page-node-id="WdMdAH6Mt2sVAav4FR1MK7"></span><span class="dotb" data-page-node-id="Rk7TwUTsV9Vyo3ozyXsIjD"></span><span class="dotb" data-page-node-id="MajDB45f5j8YnPdIQqG7pu"></span>
+        <span class="t" id="winTitle" data-page-node-id="MrifFf8GtDfHaRBwd7aUVE">收件箱</span>
+        <span class="sub" id="winSub" data-page-node-id="b3Q9wGNm5VZfi4ck6Oz0xz"></span>
+        <span class="sp" data-page-node-id="7jDaaGgftsSCMqatlAlI1J"></span>
+      </div>
+      <div class="winbody" id="winBody" data-page-node-id="l1m3vrWXXwrPAfCCY4ACPC"></div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ========== 结局 ========== -->
+<div id="ending" data-page-node-id="xBPHWp1lKoaLCIhB7QjuBY"><div class="endbox" id="endBox" data-page-node-id="twvZwpmtAtFMLWp6UYODC3"></div></div>
+
+<!-- ========== 弹窗 ========== -->
+<div id="modal" data-page-node-id="0BgC9iVXQucrtP4Ej2JhmV"><div class="mbox" id="mbox" data-page-node-id="XAhYZnGzGeI1SlgGE4cZ0o"></div></div>
+<div id="toast" data-page-node-id="2A0gpgv9jPwEcK61R4GBAw"></div>
+
+<script>
+/* ============================================================
+   TIDEWORKS ARG —— 状态与数据
+   ============================================================ */
+const SKEY = 'tideworks_arg_v1';
+const S = { stage:0, hints:{}, logs:[], visitor:'', startAt:Date.now(), ended:false,
+            extreme:false, deep:0, deepFail:{}, deepDone:false };
+
+function save(){ try{ localStorage.setItem(SKEY, JSON.stringify(S)); }catch(e){} }
+function load(){
+  try{
+    const r = localStorage.getItem(SKEY);
+    if(!r) return false;
+    const o = JSON.parse(r);
+    Object.assign(S, o);
+    if(typeof S.stage !== 'number') S.stage = 0;
+    if(!S.hints) S.hints = {};
+    if(typeof S.deep !== 'number') S.deep = 0;
+    if(!S.deepFail) S.deepFail = {};
+    return true;
+  }catch(e){ return false; }
+}
+
+/* 应用定义：id / 图标 / 名称 / 需要进度 */
+/* need = 在侧栏可见所需的最低 stage（不等于"已解开口令"） */
+const APPS = [
+  {id:'mail',  ic:'✉', nm:'收件箱',   need:1},
+  {id:'files', ic:'▤', nm:'文件系统', need:1},
+  {id:'term',  ic:'▮', nm:'运维终端', need:1},
+  {id:'staff', ic:'⚇', nm:'员工档案', need:1},
+  {id:'voice', ic:'♪', nm:'语音备忘', need:2},
+  {id:'notes', ic:'✎', nm:'加密笔记', need:3},
+  {id:'core',  ic:'◈', nm:'核心数据库', need:4},
+  {id:'deep',  ic:'⬢', nm:'深层归档',   need:5, ext:true}   /* 仅极限模式可见 */
+];
+
+/* 每关密码 */
+const PWD = {
+  login : 'chen0417',   // 姓氏全拼 + 工号后四位
+  term  : 'chaoxi',     // 会议室名（邮件）
+  staff : 'echo',       // ops.log 里的 Base64
+  voice : 'tide',       // 摩斯电码
+  notes : 'zhanwang',   // ROT13 解出
+  core  : 'm0417'       // 陈默工号（笔记里揭示）
+};
+
+/* 提示文案：每关仅一级 —— 只指向方向，用隐喻，不直接给答案 */
+const HINTS = {
+  login:'机器还记得上一个坐在这儿的人。门牌上留着他的姓，也留着他号码的尾巴——钥匙，向来是这两样东西缝在一起的。',
+  term:'他给自己留了一封信，写完却没按下发送。信里说，钥匙被藏进了一间屋子的名字里。',
+  staff:'运维说过，日志不再写在纸上，也不再藏到屏幕外面。去文件系统里翻那本流水账——有些字被压成了另一种样子。',
+  voice:'他的档案卡末尾还压着一句话。那句话说，答案不在纸上，在声音里。',
+  notes:'那页纸旁边贴着一张便签，管它叫「小学玩意儿」。字母们排成一个圈，转半圈，就回到原处。',
+  core:'最后一道门的钥匙，是他自己——那串跟了他七年的号码。去掉中间那道杠。'
+};
+
+const HINT_TITLE = {
+  login:'如何登录', term:'解锁运维终端', staff:'解锁员工档案',
+  voice:'解锁语音备忘', notes:'解锁加密笔记', core:'解锁核心数据库'
+};
+
+/* ============================================================
+   极限模式：深层归档 —— 6 层递进加密
+   二进制 → 十六进制 → 字母表对折 → 键盘位移 → 栅栏 → 维吉尼亚
+   kind: num = 数字型密文（追加扰动用倒排）；alpha = 字母型（追加凯撒偏移）
+   ============================================================ */
+const DEEP = [
+  {c:'二进制', kind:'num', ci:'01001100 01001111 01000011 01001011', ans:'lock',
+   ref:'每 8 位 0/1 是一个字节，按 ASCII 表换成字符。',
+   story:'陈默：先上锁，再往下读。下面每一层我都换了写法 —— 越往下，我越怕它被人看懂。'},
+  {c:'十六进制', kind:'num', ci:'4c 49 53 54', ans:'list',
+   ref:'两位十六进制是一个字节，同样按 ASCII 表换。',
+   story:'名单不是一份文件。名单是一条流水线：先有列表，才有标记。'},
+  {c:'字母表对折', kind:'alpha', ci:'NZIP', ans:'mark',
+   ref:'A ↔ Z，B ↔ Y，C ↔ X …… 把字母表对折过来。',
+   story:'被「标记」的人不会收到任何通知。他们只是从某一天起，不再被派活、不再被抄送、不再被提起。'},
+  {c:'键盘位移', kind:'alpha', ci:'AIYK', ans:'soul',
+   ref:'QWERTYUIOP / ASDFGHJKL / ZXCVBNM —— 每个字母换成它右边那颗键。',
+   story:'第 47 轮的输出里有一列，表头写着 soul_score。我问过，他们说那是「员工稳定性评估」。我信了三天。'},
+  {c:'两栏栅栏', kind:'alpha', ci:'TAERC', ans:'trace',
+   ref:'两栏栅栏：密文的前半是奇数位，后半是偶数位。',
+   story:'我偷偷给自己算了一次。0.03。低于 0.05 的会被提前「安置」。我在名单上排第 12 位。'},
+  {c:'维吉尼亚', kind:'alpha', ci:'WKSSREL', ans:'silence',
+   ref:'维吉尼亚：密钥重复对齐密文，逐位相减。密钥是「回声计划」的代号，四个字母。',
+   story:'如果你走到了这里 —— 别删，别上报，别追查。把这六层原样留着，让下一个人也能走到这里。'}
+];
+/* 深层每关一句隐喻提示（比主线更隐晦） */
+DEEP.forEach((L, i) => {
+  HINTS['deep' + (i + 1)] = ['机器只认识两个数。八个一组，拼成一个字。',
+    '还是那两个数，只是换了副面孔 —— 十六个符号，两个凑一个。',
+    '字母表是可以对折的。头碰着尾，尾碰着头。',
+    '你的手知道答案：键盘上，每一颗键都有个邻居。',
+    '有一半的字被抽到了后面。把它们一个隔一个插回去。',
+    '最后一层要钥匙，而那把钥匙你早就见过 —— 它就写在这个计划的名字里。'][i];
+});
+
+/* 追加保护：连续失败 3 次起，每多错一次就再难一层 */
+function scrambleShift(fails){ return Math.max(0, fails - 2); }
+function caesar(s, n){
+  return s.replace(/[A-Za-z]/g, ch => {
+    const b = ch <= 'Z' ? 65 : 97;
+    return String.fromCharCode(((ch.charCodeAt(0) - b + n) % 26 + 26) % 26 + b);
+  });
+}
+function scramble(ci, kind, n){
+  if(n <= 0) return ci;
+  if(kind === 'num'){
+    const sp = ci.indexOf(' ') > -1;
+    const parts = sp ? ci.split(' ') : ci.match(/.{2}/g);
+    return parts.slice().reverse().join(sp ? ' ' : '');
+  }
+  return caesar(ci, n);
+}
+
+/* 邮件数据 */
+const MAILS = [
+  {
+    from:'IT 支持', date:'08-14 09:22', unread:false,
+    subj:'【提醒】您的访问口令将在 3 天后过期',
+    body:'陈默 你好：\n\n系统检测到你的访问口令已使用超过 180 天，请在 3 天内完成更换。\n\n口令规则：姓氏全拼 + 工号后四位。\n请勿使用与其他系统相同的口令。\n\n—— IT 支持中心\n（本邮件由系统自动发送，请勿回复）'
+  },
+  {
+    from:'项目组', date:'08-19 17:41', unread:true,
+    subj:'回声计划 · 第 47 次同步会议纪要',
+    body:'各位：\n\n本次同步确认以下事项：\n\n1. 模型第 47 轮训练已完成，收敛指标达标。\n2. 数据源扩展至全员内部通讯（邮件 / 工单 / 门禁）。\n3. 下一轮评审定在今晚 21:00，地点【潮汐】会议室。\n\n注意：会议内容属 L3 级机密，请勿外传。\n\n—— 项目组'
+  },
+  {
+    from:'运维组', date:'08-21 11:08', unread:false,
+    subj:'关于调试日志输出位置的调整',
+    body:'研发同学：\n\n即日起，前端调试日志不再写入浏览器控制台，统一落到 /home/chen.mo/ops.log。\n运维反馈这样定位问题更快，也省得大家翻半天日志。\n\n（另：还有人在按 F12 找日志。别找了，那里早就没有了。）\n\n如有疑问请提工单。\n\n—— 运维组'
+  },
+  {
+    from:'陈默', date:'08-26 03:14', unread:true,
+    subj:'（无主题）草稿 · 未发送',
+    body:'如果你在读这封邮件，说明我已经不在工位了。\n\n几件事，按顺序：\n\n一、运维终端的口令是会议室的名字，全拼。别试我的生日，我改过了。\n二、档案库的口令运维写进 ops.log 里了，说是最安全的地方。\n三、语音备忘那段东西，别在工位听。\n\n我看了第 47 轮的输出。它预测的不是业务指标。\n它预测的是人。\n\n如果名单上有我，别来找我。'
+  }
+];
+
+/* 文件系统 */
+const FILES = {
+  'readme.txt':'陈默的备忘：\n\n1. 档案库口令运维丢进 ops.log 里了，别问我为什么。\n2. 语音那玩意儿别在工位听，真的。\n3. 如果看到这行字而我不在，去 core 目录看看。\n   口令是我自己的工号，小写，去掉横杠。',
+  'ops.log':'[08-21 11:08] 调试日志输出位置调整：浏览器控制台 → /home/chen.mo/ops.log\n[08-21 11:09] 备注：最显眼的地方，反而没人看。\n[08-26 02:58] 档案库访问口令（Base64）：ZWNobw==\n[08-26 02:58] 解码方式：atob("ZWNobw==")\n[08-26 03:01] 另：终端里输入 echo echo 可放行档案库（运维偷懒留的后门，别外传）\n[08-26 03:12] 以上条目由运维组自动写入 · 请勿手工编辑',
+  'echo.log':'[08-26 03:02] 任务 ECHO.SYNC 启动\n[08-26 03:03] 载入语料：内部通讯 4,102,884 条\n[08-26 03:07] 标记队列刷新，新增 1 条\n[08-26 03:11] 标记队列刷新，新增 1 条  <-- 异常：同一账户重复入队\n[08-26 03:14] 标记目标：M-0417\n[08-26 03:14] 状态：已归档\n[08-26 03:15] 任务 ECHO.SYNC 正常结束\n\n警告：以上条目已超出当前权限可见范围。',
+  'meeting.txt':'第 47 次同步会议 · 地点【潮汐】会议室 · 21:00\n\n议题：模型收敛情况 / 数据源扩展 / 标记队列异常处理\n\n旁听记录（陈默）：\n他们管那个队列叫"标记"。我以为只是打标签。\n直到我看见上一批被"标记"的 11 个人，\n有 9 个在两周内离职了。\n另外 2 个，没人再提起过名字。',
+  'todo.md':'- [x] 第 47 轮数据校验\n- [x] 门禁日志接入\n- [ ] 查清楚"标记队列"到底写进哪张表\n- [ ] 把备份拷出去\n- [ ] 如果来不及——让下一个人能看懂'
+};
+
+/* 员工档案 */
+const STAFF = {
+  'M-0417':{
+    name:'陈默', dept:'研发 B 区 · 前端组', title:'高级前端工程师',
+    hire:'2019-04-17', seat:'3F-17', status:'已归档', archived:true,
+    note:'最后登录：2026-08-26 03:14　|　归档时间：2026-08-26 03:15\n归档理由：账户持有者已不在册。',
+    hidden:'语音备忘的口令不在纸面上 —— 去听那段录音，答案在声音里。'
+  },
+  'M-0312':{
+    name:'张岚', dept:'研发 B 区 · 后端组', title:'后端工程师',
+    hire:'2020-07-02', seat:'3F-15', status:'在职（已调岗）',
+    note:'2026-08-12 由 3F-15 调至 1F-02。调岗理由：岗位调整。',
+    hidden:''
+  },
+  'M-0008':{
+    name:'周维', dept:'数据平台部', title:'数据工程师',
+    hire:'2018-01-15', seat:'4F-03', status:'已归档', archived:true,
+    note:'归档时间：2026-07-30 02:41。',
+    hidden:''
+  },
+  'M-0506':{
+    name:'林一舟', dept:'行政部', title:'行政专员',
+    hire:'2021-03-08', seat:'2F-11', status:'在职',
+    note:'无异常记录。',
+    hidden:''
+  }
+};
+
+const NAMELIST = [
+  {id:'M-0008', nm:'周维',   st:'已归档', dt:'2026-07-30 02:41'},
+  {id:'M-0119', nm:'吴桐',   st:'已归档', dt:'2026-08-03 01:57'},
+  {id:'M-0233', nm:'赵一鸣', st:'已归档', dt:'2026-08-11 03:22'},
+  {id:'M-0312', nm:'张岚',   st:'已调岗', dt:'2026-08-12 10:05'},
+  {id:'M-0417', nm:'陈默',   st:'已归档', dt:'2026-08-26 03:15', hi:true},
+  {id:'M-0521', nm:'何晓',   st:'观察中', dt:'待定'},
+  {id:'M-0607', nm:'孙迟',   st:'观察中', dt:'待定'}
+];
+
+/* ============================================================
+   工具
+   ============================================================ */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+let toastT;
+function toast(m){
+  const t = $('#toast'); t.textContent = m; t.classList.add('on');
+  clearTimeout(toastT); toastT = setTimeout(()=>t.classList.remove('on'), 2400);
+}
+function norm(s){ return String(s||'').trim().toLowerCase().replace(/\s+/g,''); }
+function rot13(s){
+  return String(s).replace(/[a-z]/gi, c => {
+    const b = c <= 'Z' ? 65 : 97;
+    return String.fromCharCode((c.charCodeAt(0) - b + 13) % 26 + b);
+  });
+}
+
+/* ============================================================
+   启动序列
+   ============================================================ */
+const BOOT_LINES = [
+  {t:'TIDEWORKS INTERNAL SYSTEM  v4.2.1', c:'ok', d:120},
+  {t:'Copyright (c) 2019-2026 潮汐科技 · 仅限内部使用', c:'dim', d:90},
+  {t:'', c:'', d:60},
+  {t:'正在建立安全通道 ....................... [ OK ]', c:'', d:150},
+  {t:'正在校验终端指纹 ....................... [ OK ]', c:'', d:130},
+  {t:'正在同步员工目录 ....................... [ OK ]', c:'', d:170},
+  {t:'正在挂载归档卷 /archive ................ [ 失败 ]', c:'err', d:220},
+  {t:'   └ 重试 1/3 ......................... [ OK ]', c:'warn', d:200},
+  {t:'', c:'', d:60},
+  {t:'检测到未注销会话：', c:'warn', d:120},
+  {t:'   账户    陈默 (M-0417)', c:'', d:110},
+  {t:'   位置    研发B区 · 工位 3F-17', c:'', d:110},
+  {t:'   状态    离线（已 13 天）', c:'', d:110},
+  {t:'', c:'', d:60},
+  {t:'警告：该账户已被标记为「待归档」，但归档流程未完成。', c:'err', d:180},
+  {t:'警告：本次会话将以该账户权限继续。', c:'err', d:180},
+  {t:'', c:'', d:60},
+  {t:'[ 按任意键继续 ]', c:'hint', d:0}
+];
+
+let bootDone = false, bootAbort = false, started = false;
+function runBoot(){
+  const box = $('#bootLog');
+  let i = 0;
+  (function next(){
+    if(bootAbort) return;
+    if(i >= BOOT_LINES.length){
+      bootDone = true;
+      setTimeout(bootAdvance, 10000);   // 兜底：10 秒无操作自动进入
+      return;
+    }
+    const L = BOOT_LINES[i++];
+    const s = document.createElement('span');
+    s.className = L.c === 'ok' ? 'ok' : (L.c === 'err' ? 'err' : (L.c === 'warn' ? 'warn' : (L.c === 'hint' ? 'hint' : '')));
+    s.textContent = L.t + '\n';
+    box.appendChild(s);
+    box.parentNode.scrollTop = box.parentNode.scrollHeight;
+    setTimeout(next, L.d);
+  })();
+}
+function bootAdvance(){
+  if(started) return;
+  started = true; bootAbort = true; bootDone = true;
+  $('#boot').classList.add('done');
+  startLogin();
+}
+
+/* ============================================================
+   渲染
+   ============================================================ */
+const GATED = {term:1, staff:1, voice:1, notes:1, core:1};
+function renderRail(){
+  $('#rail').innerHTML = '';
+  const be = $('#btnExt');
+  if(be) be.style.display = S.extreme ? 'inline-block' : 'none';
+  APPS.forEach(a => {
+    if(a.ext && !S.extreme) return;      /* 深层归档只在极限模式出现 */
+    const locked = S.stage < a.need;
+    const gated = GATED[a.id] && !S['_' + a.id + 'Open'];
+    const d = document.createElement('div');
+    d.className = 'app' + (locked ? ' locked' : '') + (curApp === a.id ? ' on' : '');
+    d.innerHTML = '<div class="ic">' + a.ic + '</div><div class="nm">' + a.nm + '</div>' +
+                  (locked ? '<div class="lk">🔒 L' + (a.need + 1) + '</div>'
+                          : (gated ? '<div class="lk">🔑</div>' : ''));
+    d.onclick = () => {
+      if(locked){ toast('权限不足 · 需要先提升权限等级'); return; }
+      openApp(a.id);
+    };
+    $('#rail').appendChild(d);
+  });
+  $('#badgePerm').textContent = '权限 L' + (S.stage + 1);
+  $('#badgeProg').textContent = '进度 ' + Math.min(S.stage, 5) + ' / 5' +
+    (S.extreme ? ' · 深层 ' + S.deep + '/6' : '');
+}
+
+let curApp = 'mail';
+function openApp(id){
+  const meta0 = APPS.find(a => a.id === id);
+  if(!meta0 || (meta0.ext && !S.extreme)) return;   /* 非极限模式不得进入深层归档 */
+  if(S.stage < meta0.need) return;
+  curApp = id;
+  const meta = APPS.find(a => a.id === id);
+  $('#winTitle').textContent = meta.nm;
+  $('#winSub').textContent = {mail:'3 封未读', files:'5 个对象', term:'shell', staff:'员工目录', voice:'1 条', notes:'1 篇', core:'L6 机密', deep:'6 层加密'}[id] || '';
+  renderRail();
+  ({mail:renderMail, files:renderFiles, term:renderTerm, staff:renderStaff,
+    voice:renderVoice, notes:renderNotes, core:renderCore, deep:renderDeep}[id])();
+}
+
+/* ---------- 收件箱 ---------- */
+function renderMail(){
+  let h = '<h4>内部邮件 · 陈默（M-0417）</h4><div class="dim" style="font-size:11.5px;margin-bottom:14px">共 ' + MAILS.length + ' 封，2 封未读</div>';
+  MAILS.forEach((m, i) => {
+    h += '<div class="mail' + (m.unread ? ' unread' : '') + '" data-i="' + i + '">' +
+         '<div class="hd"><span class="from">' + esc(m.from) + '</span>' +
+         '<span class="sbj">' + esc(m.subj) + '</span>' +
+         '<span class="dt">' + m.date + '</span></div>' +
+         '<div class="bd">' + esc(m.body) + '</div></div>';
+  });
+  h += hintBlock('term');
+  $('#winBody').innerHTML = h;
+  $('#winBody').querySelectorAll('.mail .hd').forEach(el => {
+    el.onclick = () => {
+      const m = el.parentNode;
+      m.classList.toggle('open');
+      m.classList.remove('unread');
+    };
+  });
+}
+
+/* ---------- 文件系统 ---------- */
+function renderFiles(){
+  let h = '<h4>/home/chen.mo</h4><div class="dim" style="font-size:11.5px;margin-bottom:14px">5 个对象 · 点击查看</div>';
+  Object.keys(FILES).forEach(f => {
+    h += '<div class="mail" data-f="' + esc(f) + '"><div class="hd">' +
+         '<span class="from" style="min-width:auto">▤</span>' +
+         '<span class="sbj">' + esc(f) + '</span>' +
+         '<span class="dt">文本</span></div>' +
+         '<div class="bd">' + esc(FILES[f]) + '</div></div>';
+  });
+  h += hintBlock('staff');
+  $('#winBody').innerHTML = h;
+  $('#winBody').querySelectorAll('.mail .hd').forEach(el => {
+    el.onclick = () => el.parentNode.classList.toggle('open');
+  });
+}
+
+/* ---------- 终端 ---------- */
+const termLines = [];
+function renderTerm(){
+  if(termLines.length === 0){
+    termLines.push({k:'out', t:'TIDEWORKS shell · 受限模式'});
+    termLines.push({k:'out', t:'输入 help 查看可用命令。'});
+  }
+  let h = '<h4>运维终端 · 受限模式</h4>';
+  h += '<div id="termOut">';
+  termLines.forEach(l => { h += '<div class="' + (l.k || 'out') + '">' + (l.k === 'cmd' ? '$ ' : '') + esc(l.t) + '</div>'; });
+  h += '</div><div class="termline"><span class="ps1">chen.mo@tideworks:~$</span>' +
+       '<input id="termIn" autocomplete="off" spellcheck="false"></div>';
+  h += hintBlock('term');
+  $('#winBody').innerHTML = h;
+  const inp = $('#termIn');
+  inp.focus();
+  inp.onkeydown = e => {
+    if(e.key !== 'Enter') return;
+    const v = inp.value.trim();
+    inp.value = '';
+    if(!v) return;
+    termLines.push({k:'cmd', t:v});
+    execCmd(v);
+    renderTerm();
+    $('#winBody').scrollTop = $('#winBody').scrollHeight;
+  };
+}
+function execCmd(v){
+  const p = v.split(/\s+/);
+  const c = p[0].toLowerCase();
+  const a = p.slice(1).join(' ');
+  if(c === 'help'){
+    termLines.push({k:'out', t:'可用命令：ls / cat <文件> / whoami / date / echo <文本> / clear / exit'});
+  }else if(c === 'ls'){
+    termLines.push({k:'out', t:Object.keys(FILES).join('    ')});
+  }else if(c === 'cat'){
+    if(FILES[a]) termLines.push({k:'ok', t:FILES[a]});
+    else termLines.push({k:'err', t:'cat: ' + a + ': 没有该文件（试试 ls）'});
+  }else if(c === 'whoami'){
+    termLines.push({k:'ok', t:'chen.mo  (M-0417)  研发B区 · 前端组'});
+    termLines.push({k:'err', t:'注意：该账户已被标记，权限受限。'});
+  }else if(c === 'date'){
+    termLines.push({k:'out', t:new Date().toLocaleString('zh-CN')});
+  }else if(c === 'echo'){
+    termLines.push({k:'out', t:a || ''});
+    if(norm(a) === 'echo'){ unlock('staff'); }
+  }else if(c === 'clear'){
+    termLines.length = 0;
+  }else if(c === 'exit' || c === 'logout'){
+    termLines.push({k:'warn', t:'该会话无法注销 —— 账户持有者已不在册。'});
+  }else if(c === 'sudo' || c === 'rm'){
+    termLines.push({k:'err', t:'权限被拒绝。本次操作已被记录并上报。'});
+  }else if(c === 'core' || c === 'echo.sync'){
+    termLines.push({k:'err', t:'ECHO.SYNC 正在运行。标记队列：' + NAMELIST.length + ' 条。'});
+  }else{
+    termLines.push({k:'err', t:'未知命令：' + c + '（输入 help）'});
+  }
+}
+
+/* ---------- 员工档案 ---------- */
+function renderStaff(){
+  let h = '<h4>员工档案库</h4><div class="dim" style="font-size:11.5px;margin-bottom:14px">按工号检索 · 试试 M-0417</div>';
+  h += '<div class="searchrow"><input id="sidIn" placeholder="输入工号，如 M-0417" autocomplete="off"><button id="sidBtn">检索</button></div>';
+  h += '<div id="staffOut"></div>';
+  h += hintBlock('voice');
+  $('#winBody').innerHTML = h;
+  const go = () => {
+    const q = $('#sidIn').value.trim().toUpperCase();
+    const r = STAFF[q];
+    const out = $('#staffOut');
+    if(!q){ out.innerHTML = '<div class="dim">请输入工号。</div>'; return; }
+    if(!r){ out.innerHTML = '<div class="dim">未找到工号 ' + esc(q) + ' 对应的档案。<br><span style="font-size:11.5px">（该员工可能已被彻底归档）</span></div>'; return; }
+    out.innerHTML = '<div class="staffcard' + (r.archived ? ' archived' : '') + '">' +
+      '<dl>' +
+      '<dt>姓名</dt><dd>' + esc(r.name) + '</dd>' +
+      '<dt>工号</dt><dd>' + esc(q) + '</dd>' +
+      '<dt>部门</dt><dd>' + esc(r.dept) + '</dd>' +
+      '<dt>职务</dt><dd>' + esc(r.title) + '</dd>' +
+      '<dt>入职</dt><dd>' + esc(r.hire) + '</dd>' +
+      '<dt>工位</dt><dd>' + esc(r.seat) + '</dd>' +
+      '<dt>状态</dt><dd class="' + (r.archived ? 'rd' : 'gr') + '">' + esc(r.status) + '</dd>' +
+      '</dl><hr class="s"><div style="font-size:12px;white-space:pre-wrap" class="muted">' + esc(r.note) + '</div>' +
+      (r.hidden ? '<div class="dim" style="font-size:11px;margin-top:12px;letter-spacing:.08em">档案附注</div>' +
+                  '<div class="hidden-text" style="font-size:12px;margin-top:4px">' + esc(r.hidden) + '</div>' : '') +
+      '</div>';
+    if(q === 'M-0417') document.title = '陈默 · 已归档';
+  };
+  $('#sidBtn').onclick = go;
+  $('#sidIn').onkeydown = e => { if(e.key === 'Enter') go(); };
+  $('#sidIn').focus();
+}
+
+/* ---------- 语音备忘（摩斯） ---------- */
+const MORSE = {A:'.-',B:'-...',C:'-.-.',D:'-..',E:'.',F:'..-.',G:'--.',H:'....',I:'..',J:'.---',K:'-.-',L:'.-..',M:'--',N:'-.',O:'---',P:'.--.',Q:'--.-',R:'.-.',S:'...',T:'-',U:'..-',V:'...-',W:'.--',X:'-..-',Y:'-.--',Z:'--..'};
+const MORSE_MSG = 'TIDE';
+let audioCtx = null;
+function playMorse(btn){
+  btn.disabled = true; btn.classList.add('playing'); btn.textContent = '● 播放中…';
+  if(!audioCtx){ const AC = window.AudioContext || window.webkitAudioContext; audioCtx = new AC(); }
+  audioCtx.resume();
+  const t0 = audioCtx.currentTime + 0.15;
+  const DOT = 0.09, DASH = 0.27, GAP = 0.09, LGAP = 0.30;
+  let t = t0;
+  const vis = $('#morseVis');
+  const chars = MORSE_MSG.split('');
+  chars.forEach(ch => {
+    const code = MORSE[ch] || '';
+    code.split('').forEach(sym => {
+      const dur = sym === '.' ? DOT : DASH;
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = 'sine'; o.frequency.value = 620;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.14, t + 0.012);
+      g.gain.setValueAtTime(0.14, t + dur - 0.012);
+      g.gain.linearRampToValueAtTime(0, t + dur);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(t); o.stop(t + dur + 0.02);
+      t += dur + GAP;
+    });
+    t += LGAP - GAP;
+  });
+  // 逐字可视化
+  let k = 0; vis.textContent = '';
+  const iv = setInterval(() => {
+    if(k >= chars.length){ clearInterval(iv); btn.disabled = false; btn.classList.remove('playing'); btn.textContent = '▶ 重新播放'; return; }
+    /* 极限模式：只给电码，不直接把字母打出来 */
+    vis.textContent += (S.extreme ? '' : chars[k] + ' ') + MORSE[chars[k]] + '   ';
+    k++;
+  }, 640);
+}
+/* 内联锁：内容可见，但底部要求口令（用于"线索本身就是内容"的关卡） */
+function gateInline(key, ph){
+  return '<hr class="s"><div class="gate" style="padding:8px 0 0">' +
+    '<div class="gi" style="font-size:26px">🔑</div>' +
+    '<h4>本模块已锁定</h4>' +
+    '<p>输入口令解锁完整内容。</p>' +
+    '<input id="gateIn_' + key + '" type="text" placeholder="' + ph + '" autocomplete="off" spellcheck="false">' +
+    '<button class="btn" id="gateBtn_' + key + '">解 锁</button>' +
+    '<div class="emsg" id="gateErr_' + key + '"></div></div>';
+}
+function bindGate(key){
+  const inp = document.getElementById('gateIn_' + key);
+  if(!inp) return;
+  const go = function(){
+    if(norm(inp.value) === PWD[key]){
+      S['_' + key + 'Open'] = true; save();
+      unlock(key);
+      openApp(key);          /* 强制重渲染，确保玩家看到解锁后的内容 */
+    }else{
+      document.getElementById('gateErr_' + key).textContent = '口令错误 · 本次尝试已被记录';
+      inp.value = ''; inp.focus();
+    }
+  };
+  document.getElementById('gateBtn_' + key).onclick = go;
+  inp.onkeydown = function(e){ if(e.key === 'Enter') go(); };
+}
+
+function renderVoice(){
+  let h = '<h4>语音备忘 · 1 条</h4>';
+  h += '<div class="dim" style="font-size:11.5px;margin-bottom:14px">录制于 2026-08-26 03:09 · 时长 0:04 · 录制者 陈默</div>';
+  h += '<div class="morsebox"><button class="playbtn" id="playBtn">▶ 播放录音</button>' +
+       '<div class="morsevis" id="morseVis"></div>' +
+       '<div class="dim" style="font-size:11px;margin-top:8px">（建议戴耳机 · 声音是长短音）</div></div>';
+  h += '<hr class="s"><h4>电码对照表</h4>';
+  if(S.extreme){
+    h += '<div class="warn-box">极限模式：电码对照表已被撤下。<br>短音是点，长音是划 —— 剩下的，靠耳朵，或者靠你自己的记忆。</div>';
+  }else{
+    h += '<div class="dim" style="font-size:11.5px;margin-bottom:10px">短音 = 点（·）　长音 = 划（—）　对照下表把四个字母拼出来</div>';
+    h += '<div class="mtable">';
+    Object.keys(MORSE).forEach(k => { h += '<span><b>' + k + '</b>' + MORSE[k] + '</span>'; });
+    h += '</div>';
+  }
+  if(!S._voiceOpen){
+    h += gateInline('voice', '解出的四个字母');
+  }else{
+    h += '<hr class="s"><div style="font-size:12.5px" class="muted">' +
+         '录音解出来了：<span class="cy">TIDE</span>。<br>' +
+         '陈默在存档备注里写：「他们把公司名字做成了口令，觉得没人会猜到。」</div>';
+  }
+  h += hintBlock('voice');
+  $('#winBody').innerHTML = h;
+  const pb = document.getElementById('playBtn');
+  if(pb) pb.onclick = function(){ playMorse(this); };
+  bindGate('voice');
+}
+
+/* ---------- 加密笔记 ---------- */
+function renderNotes(){
+  let h = '<h4>加密笔记 · 陈默</h4>';
+  h += '<div class="dim" style="font-size:11.5px;margin-bottom:14px">最后修改：2026-08-26 03:12 · 加密方式未知</div>';
+  h += '<div class="mono-box">' + esc(rot13('zhanwang')) + '</div>';
+  h += '<hr class="s">';
+  h += '<div style="font-size:12.5px" class="muted">' +
+       '旁边贴着一张便签：<br>' +
+       '<span class="am">' + (S.extreme
+         ? '「还是老办法 —— 转半圈就回来了。他们不会注意到的。」'
+         : '「字母往后挪 13 位。这是小学玩意儿，他们不会注意到的。」') + '</span>' +
+       '</div>';
+  if(!S._notesOpen){
+    h += gateInline('notes', '解出的拼音');
+  }else{
+    h += '<hr class="s"><div style="font-size:12.5px" class="muted">' +
+         '解码结果：<span class="cy">zhanwang</span> —— 展望。<br><br>' +
+         '「展望实验室」在 B2 层，门禁卡我进不去。<br>' +
+         '核心数据库的口令是我自己的工号，小写，去掉横杠。<br>' +
+         '如果你能看到这里，说明你已经走到我了。<br>' +
+         '别停下。」</div>';
+  }
+  h += hintBlock('notes');
+  $('#winBody').innerHTML = h;
+  bindGate('notes');
+}
+
+/* ---------- 核心数据库 ---------- */
+function renderCore(){
+  let h = '<h4 class="rd">核心数据库 · ECHO.SYNC 标记队列</h4>';
+  h += '<div class="dim" style="font-size:11.5px;margin-bottom:14px">机密等级 L6 · 本次访问已被记录</div>';
+  h += '<div class="mono-box" style="border-color:#5c2222;background:#160d0d;color:#f3c9c9">' +
+       '任务：ECHO.SYNC\n状态：运行中\n标记队列：' + NAMELIST.length + ' 条\n最近刷新：2026-08-26 03:15\n\n' +
+       '说明：本队列由模型自动生成，用于预测「人员流动风险」。\n被标记人员中，87% 在 14 天内离开公司。</div>';
+  h += '<hr class="s"><h4>标记名单</h4>';
+  h += '<table class="nm"><thead><tr><th>工号</th><th>姓名</th><th>状态</th><th>时间</th></tr></thead><tbody>';
+  NAMELIST.forEach(p => {
+    h += '<tr' + (p.hi ? ' class="hi"' : '') + '><td>' + p.id + '</td><td>' + esc(p.nm) + '</td><td>' + p.st + '</td><td>' + p.dt + '</td></tr>';
+  });
+  h += '</tbody></table>';
+  h += '<hr class="s">';
+  h += '<div style="font-size:12.5px" class="muted">' +
+       '陈默（M-0417）在 08-26 03:15 被归档。<br>' +
+       '他的工位是 <span class="cy">3F-17</span>。<br><br>' +
+       '而在他之前，已经有 11 个人走过同样的流程。</div>';
+  h += '<hr class="s"><h4>安全审计</h4>';
+  h += '<div style="font-size:12.5px" class="muted">本次会话未登记使用者。按公司规定，需补登记访客姓名后方可离开本页。</div>';
+  if(S.extreme && S.deep < DEEP.length){
+    h += '<div class="warn-box">审计提示：本库之下仍挂载 <b>' + (DEEP.length - S.deep) + ' 层未读归档</b>（⬢ 深层归档，见左侧）。<br>' +
+         '登记之后本次会话即告结束，未读归档将不再可见。</div>';
+  }
+  h += '<div class="searchrow" style="margin-top:12px">' +
+       '<input id="visIn" placeholder="请输入你的姓名" autocomplete="off" maxlength="12">' +
+       '<button id="visBtn">登记</button></div>';
+  $('#winBody').innerHTML = h;
+  $('#visBtn').onclick = submitVisitor;
+  $('#visIn').onkeydown = e => { if(e.key === 'Enter') submitVisitor(); };
+}
+function submitVisitor(){
+  const v = $('#visIn').value.trim();
+  if(!v){ toast('请输入姓名'); return; }
+  S.visitor = v; save();
+  showEnding(v);
+}
+
+/* ---------- 深层归档（仅极限模式） ---------- */
+function renderDeep(){
+  let h = '<h4 class="rd">深层归档 · ECHO.SYNC 底层</h4>';
+  h += '<div class="dim" style="font-size:11.5px;margin-bottom:4px">陈默把这六层压在核心数据库下面 · 已解 ' +
+       S.deep + ' / ' + DEEP.length + '</div>';
+  h += '<div class="dim" style="font-size:11px;margin-bottom:6px">加密方式逐层升级 · 每层连续失败 3 次起，系统会对密文追加保护</div>';
+  h += '<div class="deep-progress">';
+  DEEP.forEach((L, i) => {
+    h += '<i class="' + (i < S.deep ? 'done' : (i === S.deep ? 'cur' : '')) + '"></i>';
+  });
+  h += '</div>';
+
+  /* 已解开的层：显示密文与陈默留下的话 */
+  DEEP.forEach((L, i) => {
+    if(i >= S.deep) return;
+    h += '<div class="layer done"><h5>第 ' + (i + 1) + ' 层 · ' + L.c + ' · 已解开：' + L.ans.toUpperCase() + '</h5>' +
+         '<div class="ci">' + esc(L.ci) + '</div>' +
+         '<div style="font-size:12px;margin-top:9px" class="muted">' + esc(L.story) + '</div></div>';
+  });
+
+  if(S.deep < DEEP.length){
+    const i = S.deep, L = DEEP[i];
+    const fails = S.deepFail[i] || 0;
+    const sh = scrambleShift(fails);
+    h += '<div class="layer"><h5>第 ' + (i + 1) + ' 层 · ' + L.c + '</h5>';
+    h += '<div class="ci">' + esc(scramble(L.ci, L.kind, sh)) + '</div>';
+    h += '<div class="dim" style="font-size:11.5px;margin-top:10px">解码参考：' + esc(L.ref) + '</div>';
+    if(sh > 0){
+      h += '<div class="warn-box">⚠ 已连续失败 ' + fails + ' 次，系统对这一层追加了保护：' +
+           (L.kind === 'num' ? '密文分段顺序已被倒排' : '密文追加了 ' + sh + ' 位字母偏移（凯撒）') +
+           '。<br>先把这层保护剥掉，再解原本的码 —— 再错下去，保护还会继续加。</div>';
+    }
+    h += '<hr class="s"><input id="deepIn" type="text" placeholder="解出的明文（小写）" autocomplete="off" spellcheck="false">' +
+         '<button class="btn" id="deepBtn">解 开 第 ' + (i + 1) + ' 层</button>' +
+         '<div class="emsg" id="deepErr"></div></div>';
+    h += hintBlock('deep' + (i + 1));
+  }else{
+    h += '<div class="layer done"><h5>六层 · 全部解开</h5>' +
+         '<div style="font-size:12.5px" class="muted">你把陈默压在最下面的东西，一层一层全翻出来了。<br>' +
+         '名单、规则、评分、还有他自己。</div>' +
+         '<hr class="s"><button class="btn" id="deepEnd">查 看 结 果</button></div>';
+  }
+
+  $('#winBody').innerHTML = h;
+  if(S.deep < DEEP.length){
+    const i = S.deep;
+    const go = () => {
+      const v = norm($('#deepIn').value);
+      if(v === DEEP[i].ans){
+        S.deep++; S.deepFail[i] = 0; save();
+        toast('第 ' + (i + 1) + ' 层已解开 · ' + DEEP[i].ans.toUpperCase());
+        openApp('deep');
+      }else{
+        S.deepFail[i] = (S.deepFail[i] || 0) + 1; save();
+        openApp('deep');
+        const e = $('#deepErr');
+        if(e) e.textContent = '解密失败（第 ' + S.deepFail[i] + ' 次）· 本次尝试已被记录';
+      }
+    };
+    $('#deepBtn').onclick = go;
+    $('#deepIn').onkeydown = e => { if(e.key === 'Enter') go(); };
+    $('#deepIn').focus();
+  }else{
+    const b = $('#deepEnd');
+    if(b) b.onclick = showTrueEnding;
+  }
+}
+
+/* ============================================================
+   解锁 / 密码门
+   ============================================================ */
+function unlock(key){
+  const map = {term:1, staff:2, voice:3, notes:4, core:5};
+  const st = map[key];
+  if(!st) return;
+  if(S.stage >= st){ return; }
+  S.stage = st; save();
+  renderRail();
+  document.body.classList.toggle('corrupt', S.stage >= 4);
+  const names = {1:'运维终端 / 文件系统', 2:'员工档案库', 3:'语音备忘', 4:'加密笔记', 5:'核心数据库'};
+  toast('权限提升 → L' + (st + 1) + '　已解锁：' + names[st]);
+  if(curApp && APPS.find(a => a.id === curApp).need <= S.stage) openApp(curApp);
+  else openApp(key === 'term' ? 'files' : key);
+}
+
+function gateFor(key, title, desc, onOk){
+  $('#winBody').innerHTML =
+    '<div class="gate"><div class="gi">🔒</div><h4>' + title + '</h4><p>' + desc + '</p>' +
+    '<input id="gateIn" type="text" placeholder="访问口令" autocomplete="off" spellcheck="false">' +
+    '<button class="btn" id="gateBtn">解 锁</button>' +
+    '<div class="emsg" id="gateErr"></div></div>' + hintBlock(key);
+  const go = () => {
+    const v = norm($('#gateIn').value);
+    if(v === PWD[key]){ onOk(); }
+    else { $('#gateErr').textContent = '口令错误 · 本次尝试已被记录'; $('#gateIn').value = ''; $('#gateIn').focus(); }
+  };
+  $('#gateBtn').onclick = go;
+  $('#gateIn').onkeydown = e => { if(e.key === 'Enter') go(); };
+  $('#gateIn').focus();
+}
+
+/* 覆写：带门禁的打开逻辑 */
+const _openApp = openApp;
+const NEEDLV = {staff:2, voice:3, notes:4, core:5};
+openApp = function(id){
+  if(S.stage < APPS.find(a => a.id === id).need) return;
+  /* 已通过其他途径（如终端 echo echo）提升权限 → 直接放行，不再要求口令 */
+  if(NEEDLV[id] && !S['_' + id + 'Open'] && S.stage >= NEEDLV[id]){
+    S['_' + id + 'Open'] = true; save(); _openApp(id); return;
+  }
+  if(id === 'term' && S.stage === 1 && !S._termOpen){
+    curApp = 'term'; renderRail(); $('#winTitle').textContent = '运维终端'; $('#winSub').textContent = 'shell';
+    $('#winBody').innerHTML = '<div class="gate"><div class="gi">🔒</div><h4>运维终端已锁定</h4><p>本终端启用独立口令，与域账号不同。口令由持有人另行设置。</p>' +
+      '<input id="gateIn" type="text" placeholder="访问口令" autocomplete="off"><button class="btn" id="gateBtn">解 锁</button><div class="emsg" id="gateErr"></div></div>' + hintBlock('term');
+    const go = () => {
+      if(norm($('#gateIn').value) === PWD.term){ S._termOpen = true; save(); _openApp('term'); }
+      else { $('#gateErr').textContent = '口令错误 · 本次尝试已被记录'; $('#gateIn').value = ''; $('#gateIn').focus(); }
+    };
+    $('#gateBtn').onclick = go;
+    $('#gateIn').onkeydown = e => { if(e.key === 'Enter') go(); };
+    $('#gateIn').focus();
+    return;
+  }
+  if(id === 'staff' && !S._staffOpen){
+    curApp = 'staff'; renderRail(); $('#winTitle').textContent = '员工档案'; $('#winSub').textContent = '员工目录';
+    $('#winBody').innerHTML = '<div class="gate"><div class="gi">🔒</div><h4>员工档案库已锁定</h4><p>本库访问口令由运维组另行下发，写在他们的日志里。</p>' +
+      '<input id="gateIn" type="text" placeholder="访问口令" autocomplete="off"><button class="btn" id="gateBtn">解 锁</button><div class="emsg" id="gateErr"></div></div>' + hintBlock('staff');
+    const go = () => {
+      if(norm($('#gateIn').value) === PWD.staff){ S._staffOpen = true; save(); unlock('staff'); _openApp('staff'); }
+      else { $('#gateErr').textContent = '口令错误 · 本次尝试已被记录'; $('#gateIn').value = ''; $('#gateIn').focus(); }
+    };
+    $('#gateBtn').onclick = go;
+    $('#gateIn').onkeydown = e => { if(e.key === 'Enter') go(); };
+    $('#gateIn').focus();
+    return;
+  }
+  /* voice / notes 的线索本身就藏在内容里，因此不做前置门禁 —— 改为内容页内联锁（见 renderVoice / renderNotes） */
+  if(id === 'core' && !S._coreOpen){
+    curApp = 'core'; renderRail(); $('#winTitle').textContent = '核心数据库'; $('#winSub').textContent = 'L6 机密';
+    $('#winBody').innerHTML = '<div class="gate"><div class="gi">◈</div><h4>核心数据库已锁定</h4><p>本库口令由持有人自设。readme.txt 里留了话。</p>' +
+      '<input id="gateIn" type="text" placeholder="m0000" autocomplete="off"><button class="btn" id="gateBtn">解 锁</button><div class="emsg" id="gateErr"></div></div>' + hintBlock('core');
+    const go = () => {
+      if(norm($('#gateIn').value) === PWD.core){ S._coreOpen = true; save(); unlock('core'); _openApp('core'); }
+      else { $('#gateErr').textContent = '口令错误 · 本次尝试已被记录'; $('#gateIn').value = ''; $('#gateIn').focus(); }
+    };
+    $('#gateBtn').onclick = go;
+    $('#gateIn').onkeydown = e => { if(e.key === 'Enter') go(); };
+    $('#gateIn').focus();
+    return;
+  }
+  _openApp(id);
+};
+
+/* ============================================================
+   提示系统
+   ============================================================ */
+function hintBlock(key){
+  const used = !!S.hints[key];
+  let h = '<div class="hints"><div class="hh">◈ 卡住了？</div>';
+  h += '<button class="hbtn' + (used ? ' used' : '') + '" data-k="' + key + '">给一句提示</button>';
+  if(used){
+    h += '<div class="htext">' + HINTS[key] + '</div>';
+    h += '<div class="dim" style="font-size:11px;margin-top:6px">每关只有这一句。剩下的路自己走。</div>';
+  }
+  h += '</div>';
+  return h;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('.hbtn');
+  if(!b || !b.dataset.k) return;
+  const k = b.dataset.k;
+  if(!S.hints[k]){ S.hints[k] = 1; save(); if(curApp) openApp(curApp); }
+});
+
+/* 全局提示面板 */
+$('#btnHintAll').onclick = () => {
+  let h = '<h4>提示中心</h4><div class="dim" style="font-size:11.5px;margin-bottom:12px">每关只有一句，指向方向，不给答案。想清楚再看。</div>';
+  let s = '<div style="display:flex;gap:6px;flex-wrap:wrap">';
+  const titles = Object.assign({}, HINT_TITLE);
+  if(S.extreme) DEEP.forEach((L, i) => { titles['deep' + (i + 1)] = '深层 ' + (i + 1); });
+  Object.keys(titles).forEach(k => {
+    s += '<button class="hbtn" data-all="' + k + '">' + titles[k] + '</button>';
+  });
+  s += '</div><div id="allHintOut" style="margin-top:12px"></div>';
+  $('#mbox').innerHTML = h + s + '<button class="btn ghost" id="mClose">关 闭</button>';
+  $('#modal').classList.add('on');
+  $('#mClose').onclick = () => $('#modal').classList.remove('on');
+  $('#mbox').querySelectorAll('[data-all]').forEach(b => {
+    b.onclick = () => {
+      const k = b.dataset.all;
+      S.hints[k] = 1; save();
+      $('#allHintOut').innerHTML = '<div class="htext" style="border-left-color:var(--amber)">' + HINTS[k] + '</div>';
+      if(curApp) openApp(curApp);
+    };
+  });
+};
+
+/* ============================================================
+   极限模式：入口 / 开关
+   ============================================================ */
+function syncExtUI(){
+  const e = $('#extEntry');
+  if(e){
+    e.textContent = S.extreme ? '◈ 极限 · 已开启' : '◈ 极限';
+    e.classList.toggle('on', !!S.extreme);
+  }
+  const pr = $('#plateRule');
+  if(pr){
+    pr.innerHTML = S.extreme
+      ? '系统公告：初始口令按《员工手册》第 3 章生成 —— 名字的一部分，接上号码的一部分。<span style="color:#8a5a5a">本会话不公示明文规则。</span>'
+      : '系统公告：新员工初始口令 = 姓氏全拼 + 工号后四位（例：张三 / M-0312 → zhang0312）';
+  }
+}
+function hideExtEntry(){ const e = $('#extEntry'); if(e) e.style.display = 'none'; }
+
+function openExtModal(){
+  const on = !!S.extreme;
+  $('#mbox').innerHTML = '<h4>' + (on ? '极限模式 · 已开启' : '◈ 极限难度') + '</h4>' +
+    (on
+      ? '<p>当前会话运行在极限模式下：主线规则不明示，核心数据库之下还有 <span class="cy">6 层深层归档</span>。</p>' +
+        '<p class="dim" style="font-size:12px">已解开：' + S.deep + ' / 6　|　累计失败：' +
+        Object.keys(S.deepFail).reduce((a, k) => a + (S.deepFail[k] || 0), 0) + ' 次</p>'
+      : '<p>极限模式会同时改三件事：</p>' +
+        '<p class="dim" style="font-size:12px">1. 主线不再公示明文规则：电码对照表会被撤下，便签只剩隐喻，口令找回不给示例。</p>' +
+        '<p class="dim" style="font-size:12px">2. 核心数据库之下追加 <span class="cy">6 层深层归档</span>，加密方式逐层升级：<br>' +
+        '　二进制 → 十六进制 → 字母表对折 → 键盘位移 → 两栏栅栏 → 维吉尼亚。</p>' +
+        '<p class="dim" style="font-size:12px">3. 每层连续失败 3 次起，系统会对该层密文追加保护（倒排 / 偏移），<br>　错得越多，护得越厚，越难解。</p>' +
+        '<p style="color:var(--red);font-size:12.5px">建议备好纸笔。别指望浏览器替你解。</p>') +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:18px">' +
+    (on ? '<button class="btn ghost" id="extOff">退出极限模式</button>'
+        : '<button class="btn" id="extOn">开 启 极 限 模 式</button>') +
+    '<button class="btn ghost" id="mClose">取 消</button></div>';
+  $('#modal').classList.add('on');
+  $('#mClose').onclick = () => $('#modal').classList.remove('on');
+  const a = $('#extOn'), b = $('#extOff');
+  if(a) a.onclick = () => {
+    S.extreme = true; save(); syncExtUI();
+    $('#modal').classList.remove('on');
+    toast('极限模式已开启 · 主线规则已收起');
+    if($('#desk').classList.contains('on')){ renderRail(); if(curApp === 'core') openApp('core'); }
+  };
+  if(b) b.onclick = () => {
+    S.extreme = false; save(); syncExtUI();
+    $('#modal').classList.remove('on');
+    toast('已退出极限模式 · 深层归档已隐藏');
+    renderRail(); if(curApp === 'deep') openApp('core');
+  };
+}
+$('#extEntry').onclick = e => {
+  e.stopPropagation();                       /* 别让这一下把启动动画快进掉 */
+  if(!$('#boot').classList.contains('done')) bootAdvance();
+  openExtModal();
+};
+$('#btnExt').onclick = () => openExtModal();
+
+/* ============================================================
+   结局
+   ============================================================ */
+function showTrueEnding(){
+  S.ended = true; S.deepDone = true; save();
+  hideExtEntry();
+  document.body.classList.add('corrupt');
+  const mins = Math.max(1, Math.round((Date.now() - S.startAt) / 60000));
+  $('#desk').classList.remove('on');
+  $('#ending').classList.add('on');
+  $('#endBox').innerHTML =
+    '<div class="big glitch" style="color:var(--green)">已 解 除</div>' +
+    '<p>六层全部翻开。ECHO.SYNC 的底层逻辑，第一次被人从头读到尾。</p>' +
+    '<p>你手上有：一份名单、一套打分规则、一个 0.03 的分数，<br>还有一个把证据留给下一个人的死人。</p>' +
+    '<div class="seat">工 位 3F-17</div>' +
+    '<p>他没有逃走。他只是把自己写进了队列，<br>好让这份名单上多一个不该出现的人。</p>' +
+    '<p class="dim" style="font-size:12px">极限模式 · 深层 6 / 6　|　用时约 ' + mins + ' 分钟</p>' +
+    '<p style="margin-top:22px;font-size:12.5px">「别删，别上报，别追查。把这六层原样留着。」<br>' +
+    '<span class="dim">—— 陈默，2026-08-26 03:12</span></p>' +
+    '<button class="btn ghost" id="endReset">重新开始</button>';
+  $('#endReset').onclick = doReset;
+}
+
+function showEnding(name){
+  S.ended = true; save();
+  hideExtEntry();
+  document.body.classList.add('corrupt');
+  const mins = Math.max(1, Math.round((Date.now() - S.startAt) / 60000));
+  $('#desk').classList.remove('on');
+  $('#ending').classList.add('on');
+  $('#endBox').innerHTML =
+    '<div class="big glitch">已 登 记</div>' +
+    '<p>安全审计已记录本次访问。</p>' +
+    '<p>你使用的会话属于 <span class="cy">陈默（M-0417）</span>。<br>' +
+    '但系统检测到，你不是他。</p>' +
+    '<p>ECHO.SYNC 已刷新标记队列。<br>新增 1 条。</p>' +
+    '<div class="seat">工 位 3F-17</div>' +
+    '<p>这是陈默的工位。<br>现在它是你的了。</p>' +
+    '<p class="dim" style="font-size:12px">姓名：' + esc(name) + '　|　状态：待标记　|　用时约 ' + mins + ' 分钟</p>' +
+    '<p style="margin-top:22px;font-size:12.5px">「如果名单上有我，别来找我。」<br><span class="dim">—— 陈默，2026-08-26 03:14</span></p>' +
+    '<button class="btn ghost" id="endReset">重新开始</button>';
+  $('#endReset').onclick = doReset;
+}
+
+/* ============================================================
+   登录 / 重置 / 时钟
+   ============================================================ */
+$('#btnLogin').onclick = tryLogin;
+$('#inPass').onkeydown = e => { if(e.key === 'Enter') tryLogin(); };
+$('#inUser').onkeydown = e => { if(e.key === 'Enter') $('#inPass').focus(); };
+function tryLogin(){
+  const u = norm($('#inUser').value), p = norm($('#inPass').value);
+  if(p === PWD.login){
+    $('#loginErr').textContent = '';
+    $('#login').classList.remove('on');
+    $('#desk').classList.add('on');
+    hideExtEntry();
+    S.stage = Math.max(S.stage, 1); save();
+    renderRail(); openApp('mail');
+    toast('欢迎回来，陈默。');
+    console.log('%c[TIDEWORKS] 会话已建立 · 权限 L2', 'color:#22d3ee');
+  }else{
+    $('#loginErr').textContent = '工号或口令错误（第 ' + (++loginTries) + ' 次）';
+    if(loginTries === 3){ $('#loginErr').innerHTML = '工号或口令错误（第 3 次）<br><span style="color:var(--dim);font-size:11.5px">已为你调出入口令规则说明。</span>'; $('#forgot').click(); }
+  }
+}
+let loginTries = 0;
+
+$('#forgot').onclick = () => {
+  $('#mbox').innerHTML = S.extreme
+    ? '<h4>口令找回</h4>' +
+      '<p>极限模式不公示明文规则。</p>' +
+      '<p class="dim">只给一句：名字的一部分，接上号码的一部分。</p>' +
+      '<p>需要重置请联系 IT 支持中心（分机 8842）。</p>' +
+      '<button class="btn ghost" id="mClose">知 道 了</button>'
+    : '<h4>口令找回</h4>' +
+      '<p>新员工默认口令规则：<span class="cy">姓氏全拼 + 工号后四位</span>。</p>' +
+      '<p class="dim">例：张三 / M-0312 → zhang0312</p>' +
+      '<p>需要重置请联系 IT 支持中心（分机 8842）。</p>' +
+      '<button class="btn ghost" id="mClose">知 道 了</button>';
+  $('#modal').classList.add('on');
+  $('#mClose').onclick = () => $('#modal').classList.remove('on');
+};
+
+function doReset(){
+  if(!confirm('确定要清空所有进度，从头开始吗？')) return;
+  try{ localStorage.removeItem(SKEY); }catch(e){}
+  location.reload();
+}
+$('#btnReset').onclick = doReset;
+
+function tick(){
+  const d = new Date();
+  $('#clock').textContent = d.toLocaleString('zh-CN', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
+}
+tick(); setInterval(tick, 30000);
+
+/* ============================================================
+   控制台氛围彩蛋 —— 不含任何答案，答案都在界面上
+   ============================================================ */
+console.log('%c[TIDEWORKS] 调试日志已启用（运维组 · 2026-08-21）', 'color:#22d3ee;font-weight:bold');
+console.log('%c[DEBUG] 调试日志已迁移至 /home/chen.mo/ops.log —— 一切都写在界面上，别在控制台里翻了。', 'color:#7186a8');
+console.log('%c[WARN ] 检测到非授权会话。', 'color:#ef4444');
+console.log('%c[TIDEWORKS] 终端里可以试试：echo <文本>', 'color:#4d5f7f');
+
+/* ============================================================
+   启动
+   ============================================================ */
+const had = load();
+function startLogin(){
+  if(started && $('#desk').classList.contains('on')) return;
+  started = true;
+  syncExtUI();
+  $('#boot').classList.add('done');
+  if(had && S.stage > 0){
+    $('#login').classList.remove('on');
+    $('#desk').classList.add('on');
+    hideExtEntry(); syncExtUI();
+    if(S.ended){ showEnding(S.visitor || '访客'); return; }
+    renderRail(); openApp('mail');
+    toast('已恢复上次进度 · 权限 L' + (S.stage + 1));
+  }else{
+    $('#login').classList.add('on');
+  }
+}
+runBoot();
+document.addEventListener('keydown', bootAdvance);
+document.addEventListener('click', bootAdvance);
+</script>
+</body>
+</html>
